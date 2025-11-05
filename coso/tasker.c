@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
+#include <string.h>
 typedef struct {
     char name[20];
     char description[100];
@@ -25,23 +27,23 @@ void displayTask(Task *task) {
     printf("la tarea que añadiste: \n%s, %s, prioridad de %i\n", task->name, task->description, task->priority);
 }
 int main() {
-    Task_List* tasks = malloc(sizeof(tasks));
-    if(tasks == NULL) {
-        fprintf(stderr, "memory not allocated\n");
-        return 1;
-    }
-    tasks->count = 0;
-    tasks->capacity = 100;
     printf("bienvenido a la consola de To-Dos, que quiere hacer:");
-    print("\n\t- añadir tarea: 1\n\t- mostrar tareas: 2\n\t- salir: 3");
+    Task_List* tasks = malloc(sizeof(*tasks));
+    assert(tasks != NULL && "could not allocate tasks");
+    memset(tasks, 0, sizeof(*tasks));
+    tasks->capacity = 100;
     int selected = 0;
     do {
-        scanf("%i", selected);
+	selected = 0;
+	printf("\n\t- añadir tarea: 1\n\t- mostrar tareas: 2\n\t- salir: 3\nselect: ");
+        scanf("%i", &selected);
         switch(selected)
         {
             case 1:
                 printf("añade una nueva tarea:");
-                Task task = addTask();
+		Task task = addTask();
+                tasks->tasks = &task;
+		tasks->count++;
                 break;
             case 2:
                 break;
@@ -52,7 +54,7 @@ int main() {
                 printf("???");
 
         }
-    } while (selected != 3);
+    } while (selected != 3 && selected != 0);
     
     return 0;
 }
