@@ -1,92 +1,57 @@
+/*https://youtu.be/95M6V3mZgrI?si=JKyYYb3J_HhqoWJo*/
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 
 typedef struct {
     char *name;
     bool finished;
+    int index;
 } Task;
 
 typedef struct {
-    size_t capacity;
+    Task* items;
     size_t count;
-    Task* tasks;
+    size_t capacity;
 } TasksList;
 
-TasksList init_tasksList() {
-    TasksList task = {0};
-    task.capacity = 200;
-    task.tasks = malloc(sizeof(Task)*task.capacity);
-    return task;
-}
-void addTask(TasksList *list, Task *task) {
-    list->count+=1;
-    if(list->capacity < list->count) {
-        list->capacity *= 2;
-        list->tasks = (Task *) realloc(list->tasks, list->capacity*sizeof(*list->tasks));
+void list_push(TasksList *list, Task *task){
+    if(list->count >= list->capacity) {
+        if(list->capacity == 0) list->capacity = 200;
+        else list->capacity *=2;
+        list->items = realloc(list->items, list->capacity*sizeof(*list->items));
     }
-    list->tasks[list->count] = *task;
+    task->index = list->count;
+    list->items[list->count++] = *task;
 }
 
-Task createTask() {
-    //__asm__("int3");
-    printf("name: ");
-    Task task = {.finished = false};
-
-    char io[6] = "fuck"; //test
-    //fgets(io, sizeof(io), stdin);
-    task.name = io;
-    printf("%s", task.name);
-
-    return task;
-}
-
-void show_tasks(TasksList *list) {
-    __asm__("int3");
-    size_t count = list->count;
-    if(count == 0) return;
-    for(size_t i = 0; i < count; i++) {
-        char *name = list->tasks[i].name;
-        char finished = list->tasks[i].finished;
-        printf("name: %s, finished: %i", name, finished);
+void list_show(TasksList *list) {
+    for(int j = 0; j < list->count; j++) {
+        printf("item %s ; finished: %s\n", list->items[j].name, list->items[j].finished ? "true" : "false");
     }
 }
-void finish_task(TasksList *list) { }
 
-bool selection(TasksList *list, int s) {
-    printf("select an option:\n\t1. create task\n\t2. show all taks\n\t3. finish a task\n: ");
-    //char tmp[5];
-    //int select = atoi(fgets(tmp, sizeof(tmp), stdin));
-    int select = s;
-    switch(select) {
-        case 0:
-            return false;
-            break;
-        case 1:
-            Task temp = createTask('f');
-            addTask(list, &temp);
-            break;
-        case 2:
-            show_tasks(list);
-            break;
-        case 3:
-            finish_task(list);
-        default:
-            printf("not an option");
-            break;
-    }
-    return true;
+void task_finish(TasksList *list) {
+    printf("select one from 1 to %zu: ", list->count);
+    char temp[5];
+    int selection = atoi(fgets(temp, sizeof(temp), stdin));
+    if(selection <= 0 || selection > (int)list->count) {printf("you selected nothing"); return;}
+
+    list->items[selection-1].finished = true;
 }
 
 int main() {
-    TasksList list = init_tasksList();
-    bool is_running = true;
-    int s = 1;
-    while(is_running) {
-        is_running = selection(&list, s);
-        s++;
-    }
-    free(list.tasks);
+    TasksList list = {0};
+    Task t = {.name = "fuuf", .finished = false};
+    list_push(&list, &t);
+    t = (Task){.name = "fuauf", .finished = false};
+    list_push(&list, &t);
+    task_finish(&list);
+    list_show(&list);
+
+
+    free(list.items);
     return 0;
 }
