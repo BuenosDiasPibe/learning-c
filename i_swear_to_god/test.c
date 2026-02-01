@@ -15,14 +15,12 @@ typedef struct {
 } TasksList;
 
 TasksList init_tasksList() {
-    //__asm__("int3");
     TasksList task = {0};
     task.capacity = 200;
     task.tasks = malloc(sizeof(Task)*task.capacity);
     return task;
 }
 void addTask(TasksList *list, Task *task) {
-    //__asm__("int3");
     list->count+=1;
     if(list->capacity < list->count) {
         list->capacity *= 2;
@@ -31,13 +29,12 @@ void addTask(TasksList *list, Task *task) {
     list->tasks[list->count] = *task;
 }
 
-Task createTask(char f) {
+Task createTask() {
     //__asm__("int3");
     printf("name: ");
     Task task = {.finished = false};
 
-    char io[6] = "fuck";
-    io[5] = f;
+    char io[6] = "fuck"; //test
     //fgets(io, sizeof(io), stdin);
     task.name = io;
     printf("%s", task.name);
@@ -49,8 +46,6 @@ void show_tasks(TasksList *list) {
     __asm__("int3");
     size_t count = list->count;
     if(count == 0) return;
-    char *namea = list->tasks[0].name;
-    printf("name: %s", namea);
     for(size_t i = 0; i < count; i++) {
         char *name = list->tasks[i].name;
         char finished = list->tasks[i].finished;
@@ -88,13 +83,9 @@ int main() {
     TasksList list = init_tasksList();
     bool is_running = true;
     int s = 1;
-    int u = 0;
     while(is_running) {
         is_running = selection(&list, s);
-        if(u > 5) {
-            s++;
-        }
-        u++;
+        s++;
     }
     free(list.tasks);
     return 0;
