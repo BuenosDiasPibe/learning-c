@@ -1,45 +1,49 @@
 #include <stdio.h>
 #include <stdlib.h>
-
-struct Node{
-  int data;
-  struct Node *next;
+// linked_list implementation ...
+int list_capacity = 0;
+typedef struct TODO TODO;
+struct TODO{
+  int id;
+  char* string;
+  TODO *next;
 };
 
-void Add(struct Node *n, int datas)
+void Add(TODO *n, char* todo_string)
 {
-  struct Node *papu = n;
-  printf("linea: ");
-  while(papu->next != NULL)
-  {
-    papu = papu->next;
-    print(" ");
-  }
-  (*papu).next = malloc(sizeof(struct Node));
-  papu->data = datas;
-  printf("%i\n", papu->data);
-}
-
-void show(struct Node *n)
-{
-  struct Node *papu = n;
+  TODO *papu = n->next;
   while(papu != NULL)
   {
-    printf("node: %i\n", papu->data);
+    papu = papu->next;
+    printf(".");
+  }
+  (*papu).next = malloc(sizeof(TODO));
+  papu->id= list_capacity++;
+  papu->string = todo_string;
+}
+
+void show(TODO *n)
+{
+  TODO *papu = n->next;
+  n->id = list_capacity++;
+  printf("TODO: \n");
+  while(papu != NULL)
+  {
+    printf("\t%i: %s", papu->id, papu->string);
     papu = papu->next;
   }
-  printf("null");
 }
+// ...
+
 int main()
 {
-  struct Node n = {0};
-  n.data = 1;
-  int a = 1;
-  while(a < 10)
+  TODO n = {0};
+  for(int i = 0; i < 10; i++)
   {
-    Add(&n, a);
-    a++;
+    char* cosaso = malloc(sizeof(cosaso)*10);
+    fgets(cosaso, 10, stdin);
+    Add(&n, cosaso);
   }
-
+  show(&n);
   return 0;
 }
