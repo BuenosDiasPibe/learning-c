@@ -4,12 +4,29 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
+
 
 typedef struct {
-    char *name;
+    char name[20];
     bool finished;
-    int index;
 } Task;
+
+void remove_end_line(char *name) {
+    for(int i = 0; i < sizeof(name); ++i) {
+        if(name[i] == '\n') {
+            name[i] = '\0';
+        }
+    }
+}
+
+Task create_task() {
+    Task t = {};
+    printf("task name: ");
+    fgets(t.name, sizeof(t.name), stdin);
+    remove_end_line(t.name);
+    return t;
+}
 
 typedef struct {
     Task* items;
@@ -17,19 +34,19 @@ typedef struct {
     size_t capacity;
 } TasksList;
 
-void list_push(TasksList *list, Task *task){
+
+void da_append(TasksList *list, Task *item) {
     if(list->count >= list->capacity) {
-        if(list->capacity == 0) list->capacity = 200;
+        if(list->capacity == 0) list->capacity = 10;
         else list->capacity *=2;
         list->items = realloc(list->items, list->capacity*sizeof(*list->items));
     }
-    task->index = list->count;
-    list->items[list->count++] = *task;
+    list->items[list->count++] = *item;
 }
 
 void list_show(TasksList *list) {
     for(int j = 0; j < list->count; j++) {
-        printf("item %s ; finished: %s\n", list->items[j].name, list->items[j].finished ? "true" : "false");
+        printf("\nitem %s: finished: %s\n", list->items[j].name, list->items[j].finished ? "true" : "false");
     }
 }
 
@@ -44,13 +61,12 @@ void task_finish(TasksList *list) {
 
 int main() {
     TasksList list = {0};
-    Task t = {.name = "fuuf", .finished = false};
-    list_push(&list, &t);
-    t = (Task){.name = "fuauf", .finished = false};
-    list_push(&list, &t);
+    for(int a = 0; a < 20; a++) {
+        Task t = create_task();
+        da_append(&list, &t);
+    }
     task_finish(&list);
     list_show(&list);
-
 
     free(list.items);
     return 0;
