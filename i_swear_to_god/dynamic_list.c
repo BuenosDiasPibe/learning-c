@@ -3,8 +3,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include <string.h>
-#include <assert.h>
 
 typedef struct {
     char name[20];
