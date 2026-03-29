@@ -1,6 +1,6 @@
-#define RGFW_IMPLEMENTATION
 #include "glad.c"
 #include <GLFW/glfw3.h>
+#include <stdio.h>
 #include <assert.h>
 #include <stdbool.h>
 
@@ -24,6 +24,37 @@ void setClearColor(unsigned int colorHex){
     glClearColor(color.r, color.g, color.b,color.a);
 }
 
+const char* getShader(const char* filePath){ // can return null
+    FILE *f = fopen(filePath, "r");
+    if(!f) goto error_jump;
+
+    fseek(f, 0, SEEK_END);
+    long lenght = ftell(f);
+    if(lenght <= 0) goto error_jump;
+    fseek(f, 0, SEEK_SET);
+
+    char *buffer = malloc(lenght+1);
+    if(buffer == NULL) goto error_jump;
+    if(fread(buffer, 1, lenght, f) != (size_t) lenght)
+        goto error_jump;
+    buffer[lenght] = '\0';
+
+    fclose(f);
+    return buffer;
+
+    error_jump:
+        fclose(f);
+        free(buffer);
+        return NULL;
+}
+
+float vertices[] = {
+    // x, y, z
+    -.5f, -.5f, 0.f,
+    .5f, -.5f, 0.f,
+    0.f, .5f, 0.f
+};
+
 int main() {
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); // max version to run
@@ -37,15 +68,34 @@ int main() {
     GLFWwindow *window = NULL;
     if(0){ // for funsies
         GLFWmonitor *monitor = glfwGetPrimaryMonitor(); // apparently is for fullscren?
-        window  = glfwCreateWindow(1000, 1000, "hi chat", monitor, NULL);
+        window  = glfwCreateWindow(800, 600, "hi chat", monitor, NULL);
     } else {
-        window = glfwCreateWindow(1000, 1000, "hi chat", NULL, NULL);
+        window  = glfwCreateWindow(800, 600, "hi chat", NULL, NULL);
     }
     assert(window != NULL); // window shall be created
     glfwMakeContextCurrent(window);
 
     assert(gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)); // glad shall work
     glfwSetFramebufferSizeCallback(window, framefubber_size_callback); // set callback to resize window
+    
+    unsigned int VBO = 0; // id of the VBO.
+    glGenBuffers(1, &VBO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    // get vertex shader
+    const char* vertexFile = getShader("glsl/vertex.glsl");
+    assert(vertexFile != NULL);
+    unsigned int vertexShaderID = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertexShaderID, 1, &vertexFile, NULL);
+    glCompileShader(vertexShaderID);
+    int success = 0;
+    char infoLog[512] = {0};
+    glGetShaderiv(vertexShaderID, GL_COMPILE_STATUS, &success);
+    if(!success) {
+        glGetShaderInfoLog(vertexShaderID, 512, NULL, infoLog);
+        printf("%s", infoLog);
+    }
 
     // render loop
     setClearColor(0x282828FF); // configure openGL clearColor mask buffer (changes a state of openGL)
@@ -60,6 +110,7 @@ int main() {
         glfwPollEvents(); // for getting events (eg: windowClose)
         glfwSwapBuffers(window); // for double buffering
     }
+    free((void*)vertexFile);
     glfwTerminate(); // finishes the glfw library
     return 0;
 }
