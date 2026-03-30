@@ -50,10 +50,14 @@ const char* getShader(const char* filePath){ // can return null
 }
 
 float vertices[] = {
-    // x, y, z
-    -.5f, -.5f, 0.f,
-    .5f, -.5f, 0.f,
-    0.f, .5f, 0.f
+    .5f, .5f, 0,
+    .5f, -.5f, 0,
+    -.5f, -.5f, 0,
+    -.5f, .5f, 0,
+};
+unsigned int indices[] = {
+    0,1,3,
+    1,2,3
 };
 
 int main() {
@@ -78,12 +82,6 @@ int main() {
 
     assert(gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)); // glad shall work
     glfwSetFramebufferSizeCallback(window, framefubber_size_callback); // set callback to resize window
-    
-    // generate VBO
-    unsigned int VBO = 0; // id of the VBO.
-    glGenBuffers(1, &VBO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
     // get vertex shader
     const char* vertexFile = getShader("glsl/vertex.glsl");
@@ -123,12 +121,18 @@ int main() {
         printf("%s", infoLog);
     }
 
+    unsigned int VAO, VBO, EBO = 0;
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+    glGenBuffers(1, &EBO);
 
-    // delete vertex and fragment shaders (its not needed anymore). Just a cleanup
-    glDeleteShader(vertexShaderID);
-    glDeleteShader(fragmentShaderID);
-    free((void*)vertexFile);
-    free((void*)fragmentShader);
+    glBindVertexArray(VAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
     glVertexAttribPointer(
         0, // layout (location = 0)
@@ -138,20 +142,46 @@ int main() {
         3*sizeof(float), // how far away each vec3 is from each other
         (void*)0); // offset of where the data begins in the VBO (probably)
     glEnableVertexAttribArray(0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
     // render loop
     setClearColor(0x282828FF); // configure openGL clearColor mask buffer (changes a state of openGL)
+    //
+    bool render_wireframe_mode = false;
+    bool wasPressed = false;
     while(!glfwWindowShouldClose(window)){
         // update
-        if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS){
+        if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
             glfwSetWindowShouldClose(window, true);
         }
+        if(glfwGetKey(window, GLFW_KEY_F3) == GLFW_PRESS && !wasPressed) {
+            render_wireframe_mode = !render_wireframe_mode;
+            wasPressed = true;
+        }else if(glfwGetKey(window, GLFW_KEY_F3) == GLFW_RELEASE) wasPressed = false;
+        if(render_wireframe_mode) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        else glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
         // render
         glClear(GL_COLOR_BUFFER_BIT); // clear color with openGL color
         glUseProgram(shaderProgram);
+        glBindVertexArray(VAO);
+        //glDrawArrays(GL_TRIANGLES, 0, 3);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        glBindVertexArray(0);
+
         // check and call events and swap buffers
         glfwPollEvents(); // for getting events (eg: windowClose)
         glfwSwapBuffers(window); // for double buffering
     }
+    glDeleteBuffers(1, &VAO);
+    glDeleteBuffers(1, &EBO);
+    glDeleteBuffers(1, &VBO);
+    glDeleteShader(vertexShaderID);
+    glDeleteShader(fragmentShaderID);
+    glDeleteShader(shaderProgram);
+    free((void*)vertexFile);
+    free((void*)fragmentShader);
     glfwTerminate(); // finishes the glfw library
     return 0;
 }
