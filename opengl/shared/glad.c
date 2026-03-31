@@ -22,7 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "include/glad.h"
+#include "../include/glad.h"
 
 static void* get_proc(const char *namez);
 
@@ -33,8 +33,7 @@ static void* get_proc(const char *namez);
 #include <windows.h>
 static HMODULE libGL;
 
-typedef void* (APIENTRYP PFNWGLGETPROCADDRESSPROC_PRIVATE)(const char*);
-static PFNWGLGETPROCADDRESSPROC_PRIVATE gladGetProcAddressPtr;
+typedef void* (APIENTRYP PFNWGLGETPROCADDRESSPROC_PRIVATE)(const char*); static PFNWGLGETPROCADDRESSPROC_PRIVATE gladGetProcAddressPtr;
 
 #ifdef _MSC_VER
 #ifdef __has_include

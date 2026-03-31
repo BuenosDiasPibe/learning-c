@@ -1,52 +1,25 @@
-#include "glad.c"
+#include "shared/glad.c"
+#include "shared/shared_code.c"
 #include <GLFW/glfw3.h>
 #include <stdio.h>
 #include <assert.h>
 #include <stdbool.h>
-
-typedef struct {
-    unsigned char r,g,b,a;
-} Color;
-typedef struct {
-    float r,g,b,a;
-}ColorF;
+#include <stdint.h>
+#include <sys/types.h>
+#include <math.h>
 
 void framefubber_size_callback(GLFWwindow *window, int width, int height){
     glViewport(0,0,width,height); // used for transformation between openGL coordinates and window coordinates
 }
 
-void setClearColor(unsigned int colorHex){
+void setClearColor(uint colorHex){
+    Color c = getColorFromHex(colorHex);
     ColorF color = {0};
-    color.r = (float)((colorHex >> 24) & 0xFF)/255;
-    color.g = (float)((colorHex >> 16) & 0xFF)/255;
-    color.b = (float)((colorHex >> 8) & 0xFF)/255;
-    color.a = (float)(colorHex & 0xFF)/255;
+    color.r = c.r/255.;
+    color.g = c.g/255.;
+    color.b = c.b/255.;
+    color.a = c.a/255.;
     glClearColor(color.r, color.g, color.b,color.a);
-}
-
-const char* getShader(const char* filePath){ // can return null
-    char *buffer = {0};
-    FILE *f = fopen(filePath, "r");
-    if(!f) goto error_jump;
-
-    fseek(f, 0, SEEK_END);
-    long length = ftell(f);
-    if(length <= 0) goto error_jump;
-    fseek(f, 0, SEEK_SET);
-
-    buffer = malloc(length+1);
-    if(buffer == NULL) goto error_jump;
-    if(fread(buffer, 1, length, f) != (size_t) length)
-        goto error_jump;
-    buffer[length] = '\0';
-
-    fclose(f);
-    return buffer;
-
-    error_jump:
-        fclose(f);
-        free(buffer);
-        return NULL;
 }
 
 float vertices[] = {
@@ -55,12 +28,13 @@ float vertices[] = {
     -.5f, -.5f, 0,
     -.5f, .5f, 0,
 };
-unsigned int indices[] = {
+uint indices[] = {
     0,1,3,
     1,2,3
 };
 
 int main() {
+    float timeValue = 0;
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); // max version to run
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3); // minor version to run
@@ -70,13 +44,7 @@ int main() {
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPACT, GL_TRUE);
 #endif
     // start window context
-    GLFWwindow *window = NULL;
-    if(0){ // for funsies
-        GLFWmonitor *monitor = glfwGetPrimaryMonitor(); // apparently is for fullscren?
-        window  = glfwCreateWindow(800, 600, "hi chat", monitor, NULL);
-    } else {
-        window  = glfwCreateWindow(800, 600, "hi chat", NULL, NULL);
-    }
+    GLFWwindow *window  = glfwCreateWindow(800, 600, "hi chat", NULL, NULL);
     assert(window != NULL); // window shall be created
     glfwMakeContextCurrent(window);
 
@@ -84,9 +52,9 @@ int main() {
     glfwSetFramebufferSizeCallback(window, framefubber_size_callback); // set callback to resize window
 
     // get vertex shader
-    const char* vertexFile = getShader("glsl/vertex.glsl");
+    const char* vertexFile = getShader("glsl/new_vertex.glsl");
     assert(vertexFile != NULL);
-    unsigned int vertexShaderID = glCreateShader(GL_VERTEX_SHADER);
+    uint vertexShaderID = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertexShaderID, 1, &vertexFile, NULL);
     glCompileShader(vertexShaderID);
     int success = 0;
@@ -98,8 +66,9 @@ int main() {
     }
 
     // get fragment shader
-    const char* fragmentShader = getShader("glsl/fragment.glsl");
-    unsigned int fragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
+    const char* fragmentShader = getShader("glsl/new_fragment.glsl");
+    assert(fragmentShader != NULL);
+    uint fragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(fragmentShaderID,1, &fragmentShader, NULL);
     glCompileShader(fragmentShaderID);
     glGetShaderiv(fragmentShaderID, GL_COMPILE_STATUS, &success);
@@ -109,7 +78,7 @@ int main() {
     }
 
     // generate shader program
-    unsigned int shaderProgram = glCreateProgram();
+    uint shaderProgram = glCreateProgram();
     
     // bind vertex and fragment shaders inside program
     glAttachShader(shaderProgram, vertexShaderID);
@@ -120,8 +89,10 @@ int main() {
         glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
         printf("%s", infoLog);
     }
+    int shaderColorLocation = glGetUniformLocation(shaderProgram, "vertexColor");
+    assert(shaderColorLocation != -1 && "shader uniform not found");
 
-    unsigned int VAO, VBO, EBO = 0;
+    uint VAO, VBO, EBO = 0;
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
     glGenBuffers(1, &EBO);
@@ -165,6 +136,14 @@ int main() {
         // render
         glClear(GL_COLOR_BUFFER_BIT); // clear color with openGL color
         glUseProgram(shaderProgram);
+        timeValue = glfwGetTime();
+        glUniform4f (
+                    shaderColorLocation,
+                    0,
+                    sinf(timeValue)/2+.5f,
+                    0,
+                    1
+        );
         glBindVertexArray(VAO);
         //glDrawArrays(GL_TRIANGLES, 0, 3);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
@@ -180,8 +159,8 @@ int main() {
     glDeleteShader(vertexShaderID);
     glDeleteShader(fragmentShaderID);
     glDeleteShader(shaderProgram);
+    glfwTerminate(); // finishes the glfw library
     free((void*)vertexFile);
     free((void*)fragmentShader);
-    glfwTerminate(); // finishes the glfw library
     return 0;
 }
